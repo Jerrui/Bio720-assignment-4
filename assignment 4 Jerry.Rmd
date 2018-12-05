@@ -1,0 +1,151 @@
+---
+title: "12.4 assignment"
+author: "Jerry"
+date: "2018Äê12ÔÂ4ÈÕ"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+2.
+```{r}
+p_t <- function(wAA,wAa,waa,p0,n) {
+    p <- rep(NA, n)  
+    w_bar <- rep(NA, n)
+   	p[1] <- p0 
+	w_bar[1] <- p[1]*p[1]*wAA + 2*p[1]*(1-p[1])*wAa + (1-p[1])*(1-p[1])*waa
+	for ( i in 2:n) {
+		w_bar[i - 1] <- p[i-1]*p[i-1]*wAA + 2*p[i-1]*(1-p[i-1])*wAa + (1-p[i-1])*(1-p[i-1])*waa
+		p[i] <- p[i-1]*p[i-1]*wAA/w_bar[i - 1] + p[i-1]*(1-p[i-1])*wAa/w_bar[i - 1]
+	}
+if (any(p > 0.9999)) {
+    p.fixation <- min(which.max(p > 0.9999))
+    cat("fixation for A occurs approximately at generation:", p.fixation )	
+} else if (any((1-p) > 0.9999)) {
+    q.fixation <- min(which.max((1-p) > 0.9999))
+    cat("fixation for a occurs approximately at generation:", q.fixation )	
+    }
+  else {
+        maxAlleleFreq <- max(p)
+    	cat("fixation of A1 does not occur, max. allele frequency is:", print(maxAlleleFreq, digits = 2))
+    }
+plot(x = 1:n, y = p, 
+     xlab="generations", 
+	 ylab="Allele frequency (p)", main = "generations VS Allele frequency (p)",
+	 pch = 20, col = "red", cex.lab = 1.5)   
+    return(p)
+}
+p_t(1,0.9,0.8,0.3,100)
+
+```
+
+3.
+```{r}
+allele_drift <- function(fA,alleles,n){
+A_freq <- rep(NA,n)
+a_freq <- rep(NA,n)
+
+A_freq[1] <- fA
+a_freq[1] <- (1-fA)
+for (i in 2:n) {
+allele_counts <- sample(c("a", "A"), size = alleles, replace = TRUE, prob = c(a_freq[i-1],A_freq[i-1]))
+a_freq[i] <- as.vector(table(allele_counts)/length(allele_counts))[1]
+A_freq[i] <- (1-(a_freq[i]))
+}
+plot(a_freq~c(1:n), type="l",
+     xlab="generations", 
+	 ylab="Allele frequency(A)", main = "genetic drift",
+	 xlim = c(1,100),
+   ylim = c(0,1), 
+	 pch = 20, col = "red", cex.lab = 1.5)
+lines(A_freq~c(1:n),col = "blue")
+}
+allele_drift(0.5,400,1000)
+```
+
+4.
+```{r}
+allele_drift2 <- function(fA,alleles,n){
+A_freq <- rep(NA,n)
+a_freq <- rep(NA,n)
+A_freq[1] <- fA
+a_freq[1] <- (1-fA)
+for (i in 2:n) {
+allele_counts <- sample(c("a", "A"), size = alleles, replace = TRUE, prob = c(a_freq[i-1],A_freq[i-1]))
+a_freq[i] <- as.vector(table(allele_counts)/length(allele_counts))[1]
+A_freq[i] <- 1-(a_freq[i])
+}
+return(A_freq)
+}
+allele_counts_4 <- function(fA,alleles,n,x){
+  repl <- replicate(x, allele_drift2(fA,alleles,n))
+  return(sum(repl[100,] == 0)/x)
+}
+allele_counts_4(0.5,400,100,1000)
+allele_counts_4(0.25,400,100,1000)
+allele_counts_4(0.1,400,100,1000)
+```
+
+5.
+```{r echo=FALSE}
+plot(x = 1,y = 0, type = "n", 
+     xlab = " generation",
+     ylab = "allele frequency",
+     xlim = c(1,100),
+     ylim = c(0,1),
+     main = "The influence of genetic drift on allele frequencies")
+allele_drift2 <- function(fA,alleles,n){
+A_freq <- rep(NA,n)
+a_freq <- rep(NA,n)
+A_freq[1] <- fA
+a_freq[1] <- (1-fA)
+for (i in 2:n) {
+allele_counts <- sample(c("a", "A"), size = alleles, replace = TRUE, prob = c(a_freq[i-1],A_freq[i-1]))
+a_freq[i] <- as.vector(table(allele_counts)/length(allele_counts))[1]
+A_freq[i] <- (1-(a_freq[i]))
+lines(A_freq~c(1:n),col = sample(rainbow(6),1))
+}
+}
+replicate(n = 100, allele_drift2(0.5, 400, 100))
+```
+6(1).
+```{r}
+set.seed(720)
+pval <- function(intercept, slope, size, sd) {
+x <- seq(from =1, to = 10, length.out = size) 
+y_deterministic <- intercept + slope*x
+y_simulated <- rnorm(length(x), mean = y_deterministic, sd)
+mod_sim <- lm(y_simulated ~ x)
+p_val_slope <- summary(mod_sim)$coef[2,4]
+p_val_slope
+}
+replicate(n=100,pval(0.5,0.1,20,2))
+```
+
+6(2)
+```{r}
+hist(replicate(n=1000,pval(0.5,0.1,20,2)))
+table((replicate(n=1000,pval(0.5,0.1,20,2)))<0.05)/length((replicate(n=1000,pval(0.5,0.1,20,2)))<0.05)
+```
+
+6(3)
+
+The result of (slope = 0) is smaller than it of (slope = 0.1). Because when slope = 0, mean = y_deterministic = a. There is no linear relationship so you won't have a high p value expectation.
+```{r}
+hist(replicate(n=1000,pval(0.5,0,20,2)))
+table((replicate(n=1000,pval(0.5,0,20,2)))<0.05)/length((replicate(n=1000,pval(0.5,0,20,2)))<0.05)
+```
+
+6(4)
+```{r}
+replicates <- rep(NA,100)
+samples <- seq(10, 100, 5)
+proportion <- rep(NA,length(samples))
+for(i in 1:length(samples)) {
+replicates <- replicate(n=100,pval(0.5,0.1,samples[i],1.5))
+  proportion[i] <- sum(replicates<0.05)/length(replicates)
+} 
+plot(x= samples, y = proportion,  xlab="sample size", 
+	 ylab="proportion of p-values less than 0.05", main = "sample size VS proportion of p-values less than 0.05")
+```
+
